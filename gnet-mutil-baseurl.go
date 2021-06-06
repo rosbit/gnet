@@ -10,13 +10,13 @@ import (
 	"math/rand"
 )
 
-type baseItem struct {
+type BaseItemT struct {
 	baseUrl string
 	weight  uint
 	lastAccessTime int64
 }
 
-func BaseItem(baseUrl string, weight ...uint) baseItem {
+func BaseItem(baseUrl string, weight ...uint) BaseItemT {
 	getWeight := func() uint {
 		if len(weight)>0 {
 			return weight[0]
@@ -24,7 +24,7 @@ func BaseItem(baseUrl string, weight ...uint) baseItem {
 		return 0
 	}
 
-	return baseItem {
+	return BaseItemT {
 		baseUrl: baseUrl,
 		weight: getWeight(),
 		lastAccessTime: time.Now().Unix(),
@@ -32,13 +32,13 @@ func BaseItem(baseUrl string, weight ...uint) baseItem {
 }
 
 type BaseUrl struct {
-	baseItems []baseItem
+	baseItems []BaseItemT
 	chooser *wr.Chooser
 	rd *rand.Rand
 	lastOKIndex int
 }
 
-func NewBaseUrl(baseItem ...baseItem) (b *BaseUrl, err error) {
+func NewBaseUrl(baseItem ...BaseItemT) (b *BaseUrl, err error) {
 	if len(baseItem) == 0 {
 		err = fmt.Errorf("no items")
 		return
@@ -55,6 +55,19 @@ func NewBaseUrl(baseItem ...baseItem) (b *BaseUrl, err error) {
 	b.createRandChooser()
 	b.lastOKIndex = -1
 	return
+}
+
+func NewBaseUrl2(baseUrl ...string) (b *BaseUrl, err error) {
+	if len(baseUrl) == 0 {
+		err = fmt.Errorf("no baseUrl")
+		return
+	}
+
+	baseItems := make([]BaseItemT, len(baseUrl))
+	for i, bu := range baseUrl {
+		baseItems[i] = BaseItem(bu)
+	}
+	return NewBaseUrl(baseItems...)
 }
 
 func (b *BaseUrl) Http(uri string, options ...Option) (status int, content []byte, resp *http.Response, err error) {
