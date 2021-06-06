@@ -64,6 +64,10 @@ func buildHttpStringParams(params interface{}) (string, error) {
 			u.Set(k, vv)
 		}
 		return u.Encode(), nil
+	case url.Values:
+		return v.Encode(), nil
+	case map[string][]string:
+		return url.Values(v).Encode(), nil
 	case int, int8, int16, int32, int64,
 		uint, uint8, uint16, uint32, uint64,
 		float32, float64,
