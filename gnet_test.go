@@ -96,7 +96,7 @@ func Test_DontReadBody(t *testing.T) {
 
 func Test_httpBuildParmas(t *testing.T) {
 	s := strings.NewReader(`{"a":"b","c":"d"}`)
-	if _, err := buildHttpParams(s); err != nil {
+	if _, err := buildHttpParams(s, os.Stderr); err != nil {
 		fmt.Printf("----failed to buildHttpParams: %v\n", err)
 	} else {
 		fmt.Printf("----buildHttpParmas ok\n")

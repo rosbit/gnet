@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 )
 
-func buildHttpParams(params interface{}) (io.ReadSeeker, error) {
+func buildHttpParams(params interface{}, bodyLogger io.Writer) (io.ReadSeeker, error) {
 	if params == nil {
 		return nil, nil
 	}
@@ -19,7 +19,7 @@ func buildHttpParams(params interface{}) (io.ReadSeeker, error) {
 	case io.ReadSeeker:
 		return v, nil
 	default:
-		param, err := buildHttpStringParams(params)
+		param, err := buildHttpStringParams(params, bodyLogger)
 		if err != nil {
 			return nil, err
 		}
@@ -30,79 +30,114 @@ func buildHttpParams(params interface{}) (io.ReadSeeker, error) {
 	}
 }
 
-func buildHttpStringParams(params interface{}) (string, error) {
+func buildHttpStringParams(params interface{}, bodyLogger io.Writer) (string, error) {
+	var r string
+	defer func() {
+		if bodyLogger != nil {
+			fmt.Fprintf(bodyLogger, "HTTP params: %s\n", r)
+		}
+	}()
+
 	if params == nil {
-		return "", nil
+		return r, nil
 	}
 	switch v := params.(type) {
 	case *strings.Builder:
-		return v.String(), nil
+		r = v.String()
+		return r, nil
 	case *bytes.Buffer:
-		return v.String(), nil
+		r = v.String()
+		return r, nil
 	case io.WriterTo:
 		b := &bytes.Buffer{}
 		if _, err := v.WriteTo(b); err != nil {
-			return "", err
+			return r, err
 		}
-		return b.String(), nil
+		r = b.String()
+		return r, nil
 	case io.Reader:
 		p, err := ioutil.ReadAll(v)
-		return string(p), err
+		r = string(p)
+		return r, err
 	case []byte:
-		return string(v), nil
+		r = string(v)
+		return r, nil
 	case string:
-		return v, nil
+		r = v
+		return r, nil
 	case map[string]interface{}:
 		u := url.Values{}
 		for k, vv := range v {
 			u.Set(k, fmt.Sprintf("%v", vv))
 		}
-		return u.Encode(), nil
+		r = u.Encode()
+		return r, nil
 	case map[string]string:
 		u := url.Values{}
 		for k, vv := range v {
 			u.Set(k, vv)
 		}
-		return u.Encode(), nil
+		r = u.Encode()
+		return r, nil
 	case url.Values:
-		return v.Encode(), nil
+		r = v.Encode()
+		return r, nil
 	case map[string][]string:
-		return url.Values(v).Encode(), nil
+		r = url.Values(v).Encode()
+		return r, nil
 	case int, int8, int16, int32, int64,
 		uint, uint8, uint16, uint32, uint64,
 		float32, float64,
 		bool:
-		return fmt.Sprintf("%v", v), nil
+		r = fmt.Sprintf("%v", v)
+		return r, nil
 	default:
-		return "", fmt.Errorf("unknown type to build http params")
+		return r, fmt.Errorf("unknown type to build http params")
 	}
 }
 
-func buildJsonParams(params interface{}) (io.ReadSeeker, error) {
+func buildJsonParams(params interface{}, bodyLogger io.Writer) (io.ReadSeeker, error) {
+	var j interface{}
+
+	defer func() {
+		if bodyLogger != nil {
+			fmt.Fprintf(bodyLogger, "JSON params: %s\n", j)
+		}
+	}()
 	if params == nil {
+		j = "null"
 		return strings.NewReader("null"), nil
 	}
 
 	switch v := params.(type) {
 	case io.ReadSeeker:
+		j = "[io.ReadSeeker]"
 		return v, nil
 	case *strings.Builder:
-		return strings.NewReader(v.String()), nil
+		s := v.String()
+		j = s
+		return strings.NewReader(s), nil
 	case *bytes.Buffer:
-		return bytes.NewReader(v.Bytes()), nil
+		b := v.Bytes()
+		j = b
+		return bytes.NewReader(b), nil
 	case io.WriterTo:
 		b := &bytes.Buffer{}
 		if _, err := v.WriteTo(b); err != nil {
 			return nil, err
 		}
-		return bytes.NewReader(b.Bytes()), nil
+		bb := b.Bytes()
+		j = bb
+		return bytes.NewReader(bb), nil
 	case io.Reader:
 		p, err := ioutil.ReadAll(v)
 		if err != nil {
 			return nil, err
 		}
+		j = p
 		return bytes.NewReader(p), nil
 	case []byte:
+		j = v
 		return bytes.NewReader(v), nil
 	default:
 		buf := &bytes.Buffer{}
@@ -111,11 +146,13 @@ func buildJsonParams(params interface{}) (io.ReadSeeker, error) {
 		if err := jsonEncoder.Encode(params); err != nil {
 			return nil, err
 		}
-		return bytes.NewReader(buf.Bytes()), nil
+		b := buf.Bytes()
+		j = b
+		return bytes.NewReader(b), nil
 	}
 }
 
-func adjustHttpArgs(url, method string, params interface{}, header map[string]string) (string, string, io.ReadSeeker, map[string]string, error) {
+func adjustHttpArgs(url, method string, params interface{}, header map[string]string, bodyLogger io.Writer) (string, string, io.ReadSeeker, map[string]string, error) {
 	if len(method) == 0 {
 		method = http.MethodGet
 	} else {
@@ -126,7 +163,7 @@ func adjustHttpArgs(url, method string, params interface{}, header map[string]st
 
 	switch method {
 	case http.MethodGet, http.MethodHead:
-		p, err := buildHttpStringParams(params)
+		p, err := buildHttpStringParams(params, bodyLogger)
 		if err != nil {
 			return url, method, paramsReader, header, err
 		}
@@ -138,7 +175,7 @@ func adjustHttpArgs(url, method string, params interface{}, header map[string]st
 			url = fmt.Sprintf("%s%c%s", url, deli, p)
 		}
 	default:
-		p, err := buildHttpParams(params)
+		p, err := buildHttpParams(params, bodyLogger)
 		if err != nil {
 			return url, method, paramsReader, header, err
 		}
@@ -152,8 +189,8 @@ func adjustHttpArgs(url, method string, params interface{}, header map[string]st
 	return url, method, paramsReader, header, nil
 }
 
-func adjustJsonArgs(method string, params interface{}, header map[string]string) (string, io.ReadSeeker, map[string]string, error) {
-	j, err := buildJsonParams(params)
+func adjustJsonArgs(method string, params interface{}, header map[string]string, bodyLogger io.Writer) (string, io.ReadSeeker, map[string]string, error) {
+	j, err := buildJsonParams(params, bodyLogger)
 	if err != nil {
 		return method, nil, header, err
 	}

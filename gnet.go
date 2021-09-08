@@ -76,29 +76,29 @@ func ModTime(rawurl string) (time.Time, error) {
 	}
 }
 
-func (gu *Request) Http(url, method string, params interface{}, header map[string]string) (status int, content []byte, resp *http.Response, err error) {
+func (g *Request) Http(url, method string, params interface{}, header map[string]string) (status int, content []byte, resp *http.Response, err error) {
 	var paramsReader io.ReadSeeker
-	if url, method, paramsReader, header, err = adjustHttpArgs(url, method, params, header); err != nil {
+	if url, method, paramsReader, header, err = adjustHttpArgs(url, method, params, header, g.options.bodyLogger); err != nil {
 		return
 	}
-	return gu.run(url, method, paramsReader, header)
+	return g.run(url, method, paramsReader, header)
 }
 
-func (gu *Request) JSON(url, method string, params interface{}, header map[string]string) (status int, content []byte, resp *http.Response, err error) {
+func (g *Request) JSON(url, method string, params interface{}, header map[string]string) (status int, content []byte, resp *http.Response, err error) {
 	var paramsReader io.ReadSeeker
-	if method, paramsReader, header, err = adjustJsonArgs(method, params, header); err != nil {
+	if method, paramsReader, header, err = adjustJsonArgs(method, params, header, g.options.bodyLogger); err != nil {
 		return
 	}
-	return gu.run(url, method, paramsReader, header)
+	return g.run(url, method, paramsReader, header)
 }
 
-func (gu *Request) GetUsingBodyParams(url string, params interface{}, header map[string]string) (status int, content []byte, resp *http.Response, err error) {
+func (g *Request) GetUsingBodyParams(url string, params interface{}, header map[string]string) (status int, content []byte, resp *http.Response, err error) {
 	var paramsReader io.ReadSeeker
 	// using http.MethodPost to make a trick
-	if _, _, paramsReader, header, err = adjustHttpArgs(url, http.MethodPost, params, header); err != nil {
+	if _, _, paramsReader, header, err = adjustHttpArgs(url, http.MethodPost, params, header, g.options.bodyLogger); err != nil {
 		return
 	}
-	return gu.run(url, http.MethodGet, paramsReader, header)
+	return g.run(url, http.MethodGet, paramsReader, header)
 }
 
 func isHttpUrl(rawurl string) bool {
@@ -130,7 +130,7 @@ func json_i(url string, option *Options) (status int, content []byte, resp *http
 	return newRequest(url, option).JSON(url, option.method, option.params, option.headers)
 }
 
-func (gu *Request) run(url, method string, params io.Reader, header map[string]string) (int, []byte, *http.Response, error) {
+func (g *Request) run(url, method string, params io.Reader, header map[string]string) (int, []byte, *http.Response, error) {
 	var req *http.Request
 	var err error
 	switch method {
@@ -148,18 +148,18 @@ func (gu *Request) run(url, method string, params io.Reader, header map[string]s
 		}
 	}
 
-	resp, err := gu.client.Do(req)
+	resp, err := g.client.Do(req)
 	if err != nil {
 		return http.StatusInternalServerError, nil, nil, err
 	}
 
-	if gu.options.dontReadRespBody {
+	if g.options.dontReadRespBody {
 		return resp.StatusCode, nil, resp, nil
 	}
 
 	defer resp.Body.Close()
 
-	respBody, deferFunc := bodyLogger(resp.Body, gu.options.bodyLogger)
+	respBody, deferFunc := bodyLogger(resp.Body, g.options.bodyLogger)
 	defer deferFunc()
 
 	if body, err := ioutil.ReadAll(respBody); err != nil {

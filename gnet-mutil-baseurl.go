@@ -97,7 +97,7 @@ func (b *BaseUrl) httpCall(uri string, option *Options) (status int, content []b
 
 	var paramsReader io.ReadSeeker
 	var header map[string]string
-	if uri, option.method, paramsReader, header, err = adjustHttpArgs(uri, option.method, option.params, option.headers); err != nil {
+	if uri, option.method, paramsReader, header, err = adjustHttpArgs(uri, option.method, option.params, option.headers, option.bodyLogger); err != nil {
 		return
 	}
 
@@ -115,7 +115,7 @@ func (b *BaseUrl) jsonCall(uri string, option *Options) (status int, content []b
 
 	var paramsReader io.ReadSeeker
 	var header map[string]string
-	if option.method, paramsReader, header, err = adjustJsonArgs(option.method, option.params, option.headers); err != nil {
+	if option.method, paramsReader, header, err = adjustJsonArgs(option.method, option.params, option.headers, option.bodyLogger); err != nil {
 		return
 	}
 
@@ -131,7 +131,7 @@ func (b *BaseUrl) getWithBody(uri string, option *Options) (status int, content 
 	var header map[string]string
 
 	// using http.MethodPost to make a trick
-	if _, _, paramsReader, header, err = adjustHttpArgs(uri, http.MethodPost, option.params, option.headers); err != nil {
+	if _, _, paramsReader, header, err = adjustHttpArgs(uri, http.MethodPost, option.params, option.headers, option.bodyLogger); err != nil {
 		return
 	}
 
