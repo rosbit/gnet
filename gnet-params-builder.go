@@ -182,9 +182,20 @@ func adjustHttpArgs(url, method string, params interface{}, header map[string]st
 
 		paramsReader = p
 		if header == nil {
-			header = make(map[string]string, 1)
+			header = map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
+		} else {
+			ct := http.CanonicalHeaderKey("Content-Type")
+			found := false
+			for k, _ := range header {
+				if http.CanonicalHeaderKey(k) == ct {
+					found = true
+					break
+				}
+			}
+			if !found {
+				header[ct] = "application/x-www-form-urlencoded"
+			}
 		}
-		header["Content-Type"] = "application/x-www-form-urlencoded"
 	}
 	return url, method, paramsReader, header, nil
 }
