@@ -214,8 +214,19 @@ func adjustJsonArgs(method string, params interface{}, header map[string]string,
 
 	if header == nil {
 		header = make(map[string]string, 1)
+	} else {
+		ct := http.CanonicalHeaderKey("Content-Type")
+		found := false
+		for k, _ := range header {
+			if http.CanonicalHeaderKey(k) == ct {
+				found = true
+				break
+			}
+		}
+		if !found {
+			header[ct] = "application/json"
+		}
 	}
-	header["Content-Type"] = "application/json"
 	return method, j, header, nil
 }
 
