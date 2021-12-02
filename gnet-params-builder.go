@@ -11,6 +11,12 @@ import (
 	"encoding/json"
 )
 
+const (
+	headerContentType = "Content-Type"
+	mimeURLEncoded = "application/x-www-form-urlencoded"
+	mimeJSON = "application/json; charset=UTF-8"
+)
+
 func buildHttpParams(params interface{}, bodyLogger io.Writer) (io.ReadSeeker, error) {
 	if params == nil {
 		return nil, nil
@@ -182,9 +188,9 @@ func adjustHttpArgs(url, method string, params interface{}, header map[string]st
 
 		paramsReader = p
 		if header == nil {
-			header = map[string]string{"Content-Type": "application/x-www-form-urlencoded"}
+			header = map[string]string{headerContentType: mimeURLEncoded}
 		} else {
-			ct := http.CanonicalHeaderKey("Content-Type")
+			ct := http.CanonicalHeaderKey(headerContentType)
 			found := false
 			for k, _ := range header {
 				if http.CanonicalHeaderKey(k) == ct {
@@ -193,7 +199,7 @@ func adjustHttpArgs(url, method string, params interface{}, header map[string]st
 				}
 			}
 			if !found {
-				header[ct] = "application/x-www-form-urlencoded"
+				header[ct] = mimeURLEncoded
 			}
 		}
 	}
@@ -213,9 +219,9 @@ func adjustJsonArgs(method string, params interface{}, header map[string]string,
 	}
 
 	if header == nil {
-		header = make(map[string]string, 1)
+		header = map[string]string{headerContentType: mimeJSON}
 	} else {
-		ct := http.CanonicalHeaderKey("Content-Type")
+		ct := http.CanonicalHeaderKey(headerContentType)
 		found := false
 		for k, _ := range header {
 			if http.CanonicalHeaderKey(k) == ct {
@@ -224,7 +230,7 @@ func adjustJsonArgs(method string, params interface{}, header map[string]string,
 			}
 		}
 		if !found {
-			header[ct] = "application/json"
+			header[ct] = mimeJSON
 		}
 	}
 	return method, j, header, nil
