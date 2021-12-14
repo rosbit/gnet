@@ -147,6 +147,9 @@ func (g *Request) run(url, method string, params io.Reader, header map[string]st
 			req.Header.Set(k, v)
 		}
 	}
+	if g.options.basicAuth {
+		req.SetBasicAuth(g.options.baUser, g.options.baPasswd)
+	}
 
 	resp, err := g.client.Do(req)
 	if err != nil {

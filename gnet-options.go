@@ -14,9 +14,20 @@ type Options struct {
 	params interface{}
 	headers map[string]string
 	jsonCall bool
+
+	baUser, baPasswd string
+	basicAuth bool
 }
 
 type Option func(*Options)
+
+func BasicAuth(userName, password string) Option {
+	return func(options *Options) {
+		options.baUser = userName
+		options.baPasswd = password
+		options.basicAuth = true
+	}
+}
 
 func Params(params interface{}) Option {
 	return func(options *Options) {
