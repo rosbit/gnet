@@ -79,8 +79,14 @@ func newHttpsRequestWithCerts(option *Options) (*Request, error) {
 		return nil, err
 	}
 	clientCertPool := x509.NewCertPool()
-	if !clientCertPool.AppendCertsFromPEM(option.certPEMBlock) {
-		return nil, fmt.Errorf("Failed to AppendCertsFromPEM")
+	if len(option.caCert) > 0 {
+		if !clientCertPool.AppendCertsFromPEM(option.caCert) {
+			return nil, fmt.Errorf("Failed to AppendCertsFromPEM")
+		}
+	} else {
+		if !clientCertPool.AppendCertsFromPEM(option.certPEMBlock) {
+			return nil, fmt.Errorf("Failed to AppendCertsFromPEM")
+		}
 	}
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{

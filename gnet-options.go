@@ -19,6 +19,7 @@ type Options struct {
 	baUser, baPasswd string
 	basicAuth bool
 
+	caCert []byte
 	certPEMBlock, keyPEMBlock []byte
 }
 
@@ -94,6 +95,20 @@ func WithTLSCertFiles(certPemFile, keyPemFile string) Option {
 func WithTLSCerts(certPEMBlock, keyPEMBlock []byte) Option {
 	return func(options *Options) {
 		options.certPEMBlock, options.keyPEMBlock = certPEMBlock, keyPEMBlock
+	}
+}
+
+func WithCaCertFile(caCertFile string) Option {
+	return func(options *Options) {
+		if caCert, err := os.ReadFile(caCertFile); err == nil {
+			options.caCert = caCert
+		}
+	}
+}
+
+func WithCaCert(caCert []byte) Option {
+	return func(options *Options) {
+		options.caCert = caCert
 	}
 }
 
