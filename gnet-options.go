@@ -2,6 +2,7 @@ package gnet
 
 import (
 	"io"
+	"os"
 )
 
 type Options struct {
@@ -17,6 +18,8 @@ type Options struct {
 
 	baUser, baPasswd string
 	basicAuth bool
+
+	certPEMBlock, keyPEMBlock []byte
 }
 
 type Option func(*Options)
@@ -74,6 +77,23 @@ func BodyLogger(writer io.Writer) Option {
 func MultiBase(multiBase *BaseUrl) Option {
 	return func(options *Options) {
 		options.multiBase = multiBase
+	}
+}
+
+func WithTLSCertFiles(certPemFile, keyPemFile string) Option {
+	return func(options *Options) {
+		if certPEMBlock, err := os.ReadFile(certPemFile); err == nil {
+			options.certPEMBlock = certPEMBlock
+		}
+		if keyPEMBlock, err := os.ReadFile(keyPemFile); err == nil {
+			options.keyPEMBlock = keyPEMBlock
+		}
+	}
+}
+
+func WithTLSCerts(certPEMBlock, keyPEMBlock []byte) Option {
+	return func(options *Options) {
+		options.certPEMBlock, options.keyPEMBlock = certPEMBlock, keyPEMBlock
 	}
 }
 

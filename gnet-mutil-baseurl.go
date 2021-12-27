@@ -92,7 +92,11 @@ func (b *BaseUrl) httpCall(uri string, option *Options) (status int, content []b
 	}
 
 	if isHttpUrl(uri) {
-		return newRequest(uri, option).Http(uri, option.method, option.params, option.headers)
+		var req *Request
+		if req, err = newRequest(uri, option); err != nil {
+			return
+		}
+		return req.Http(uri, option.method, option.params, option.headers)
 	}
 
 	var paramsReader io.ReadSeeker
@@ -110,7 +114,11 @@ func (b *BaseUrl) jsonCall(uri string, option *Options) (status int, content []b
 	}
 
 	if isHttpUrl(uri) {
-		return newRequest(uri, option).JSON(uri, option.method, option.params, option.headers)
+		var req *Request
+		if req, err = newRequest(uri, option); err != nil {
+			return
+		}
+		return req.JSON(uri, option.method, option.params, option.headers)
 	}
 
 	var paramsReader io.ReadSeeker
@@ -124,7 +132,11 @@ func (b *BaseUrl) jsonCall(uri string, option *Options) (status int, content []b
 
 func (b *BaseUrl) getWithBody(uri string, option *Options) (status int, content []byte, resp *http.Response, err error) {
 	if isHttpUrl(uri) {
-		return newRequest(uri, option).GetUsingBodyParams(uri, option.params, option.headers)
+		var req *Request
+		if req, err = newRequest(uri, option); err != nil {
+			return
+		}
+		return req.GetUsingBodyParams(uri, option.params, option.headers)
 	}
 
 	var paramsReader io.ReadSeeker
@@ -140,13 +152,17 @@ func (b *BaseUrl) getWithBody(uri string, option *Options) (status int, content 
 }
 
 func (b *BaseUrl) run(uri string, paramsReader io.ReadSeeker, header map[string]string, option *Options) (status int, content []byte, resp *http.Response, err error) {
+	var req *Request
 	startIdx := b.pick()
 	for i:=startIdx; i<len(b.baseItems); i++ {
 		url := fmt.Sprintf("%s%s", b.baseItems[i].baseUrl, uri)
 		if paramsReader != nil {
 			paramsReader.Seek(0, io.SeekStart)
 		}
-		status, content, resp, err = newRequest(url, option).run(url, option.method, paramsReader, header)
+		if req, err = newRequest(url, option); err != nil {
+			return
+		}
+		status, content, resp, err = req.run(url, option.method, paramsReader, header)
 		if err == nil {
 			return
 		}
@@ -156,7 +172,10 @@ func (b *BaseUrl) run(uri string, paramsReader io.ReadSeeker, header map[string]
 		if paramsReader != nil {
 			paramsReader.Seek(0, io.SeekStart)
 		}
-		status, content, resp, err = newRequest(url, option).run(url, option.method, paramsReader, header)
+		if req, err = newRequest(url, option); err != nil {
+			return
+		}
+		status, content, resp, err = req.run(url, option.method, paramsReader, header)
 		if err == nil {
 			return
 		}

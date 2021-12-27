@@ -49,11 +49,14 @@ func NewHttpsRequestWithCerts(certPemFile, keyPemFile string, options ...Option)
 	return &Request{client: &http.Client{Transport: transport, Timeout: time.Duration(option.timeout)*time.Second}, options: option}, nil
 }
 
-func newRequest(url string, option *Options) *Request {
+func newRequest(url string, option *Options) (*Request, error) {
 	if strings.Index(url, "https://") == 0 {
-		return newHttpsRequest(option)
+		if len(option.certPEMBlock) > 0 && len(option.keyPEMBlock) > 0 {
+			return newHttpsRequestWithCerts(option)
+		}
+		return newHttpsRequest(option), nil
 	} else {
-		return newHttpRequest(option)
+		return newHttpRequest(option), nil
 	}
 }
 
@@ -68,5 +71,24 @@ func newHttpsRequest(option *Options) *Request {
 		},
 	}
 	return &Request{client: &http.Client{Transport: transport, Timeout: time.Duration(option.timeout)*time.Second}, options: option}
+}
+
+func newHttpsRequestWithCerts(option *Options) (*Request, error) {
+	cert, err := tls.X509KeyPair(option.certPEMBlock, option.keyPEMBlock)
+	if err != nil {
+		return nil, err
+	}
+	clientCertPool := x509.NewCertPool()
+	if !clientCertPool.AppendCertsFromPEM(option.certPEMBlock) {
+		return nil, fmt.Errorf("Failed to AppendCertsFromPEM")
+	}
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs:            clientCertPool,
+			Certificates:       []tls.Certificate{cert},
+			InsecureSkipVerify: true,
+		},
+	}
+	return &Request{client: &http.Client{Transport: transport, Timeout: time.Duration(option.timeout)*time.Second}, options: option}, nil
 }
 

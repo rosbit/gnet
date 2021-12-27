@@ -30,7 +30,11 @@ func GetUsingBodyParams(url string, options ...Option) (status int, content []by
 	if !isHttpUrl(url) && option.multiBase != nil {
 		return option.multiBase.getWithBody(url, option)
 	}
-	return newRequest(url, option).GetUsingBodyParams(url, option.params, option.headers)
+	var req *Request
+	if req, err = newRequest(url, option); err != nil {
+		return
+	}
+	return req.GetUsingBodyParams(url, option.params, option.headers)
 }
 
 func GetStatus(resp *http.Response) (int, string) {
@@ -59,18 +63,24 @@ func GetLastModified(resp *http.Response) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("no response header Last-Modified")
 }
 
-func ModTime(rawurl string) (time.Time, error) {
+func ModTime(rawurl string) (modTim time.Time, err error) {
 	if isHttpUrl(rawurl) {
 		option := getOptions()
-		_, _, resp, err := newRequest(rawurl, option).Http(rawurl, http.MethodHead, nil, nil)
-		if err != nil {
-			return time.Time{}, err
+		var req *Request
+		if req, err = newRequest(rawurl, option); err != nil {
+			return
+		}
+		_, _, resp, e := req.Http(rawurl, http.MethodHead, nil, nil)
+		if e != nil {
+			err = e
+			return
 		}
 		return GetLastModified(resp)
 	} else {
 		st, e := os.Stat(rawurl)
 		if e != nil {
-			return time.Time{}, e
+			err = e
+			return
 		}
 		return st.ModTime(), nil
 	}
@@ -117,7 +127,11 @@ func http_i(url string, option *Options) (status int, content []byte, resp *http
 	if !isHttpUrl(url) && option.multiBase != nil {
 		return option.multiBase.httpCall(url, option)
 	}
-	return newRequest(url, option).Http(url, option.method, option.params, option.headers)
+	var req *Request
+	if req, err = newRequest(url, option); err != nil {
+		return
+	}
+	return req.Http(url, option.method, option.params, option.headers)
 }
 
 func json_i(url string, option *Options) (status int, content []byte, resp *http.Response, err error) {
@@ -127,7 +141,11 @@ func json_i(url string, option *Options) (status int, content []byte, resp *http
 	if !isHttpUrl(url) && option.multiBase != nil {
 		return option.multiBase.jsonCall(url, option)
 	}
-	return newRequest(url, option).JSON(url, option.method, option.params, option.headers)
+	var req *Request
+	if req, err = newRequest(url, option); err != nil {
+		return
+	}
+	return req.JSON(url, option.method, option.params, option.headers)
 }
 
 func (g *Request) run(url, method string, params io.Reader, header map[string]string) (int, []byte, *http.Response, error) {
