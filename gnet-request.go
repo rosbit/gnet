@@ -98,3 +98,6 @@ func newHttpsRequestWithCerts(option *Options) (*Request, error) {
 	return &Request{client: &http.Client{Transport: transport, Timeout: time.Duration(option.timeout)*time.Second}, options: option}, nil
 }
 
+func (g *Request) GetClient() *http.Client {
+	return g.client
+}
