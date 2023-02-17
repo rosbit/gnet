@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"io/ioutil"
 	"strings"
-	"time"
 	"fmt"
 	"crypto/tls"
 	"crypto/x509"
@@ -46,7 +45,7 @@ func NewHttpsRequestWithCerts(certPemFile, keyPemFile string, options ...Option)
 			InsecureSkipVerify: true,
 		},
 	}
-	return &Request{client: &http.Client{Transport: transport, Timeout: time.Duration(option.timeout)*time.Second}, options: option}, nil
+	return &Request{client: &http.Client{Transport: transport, Timeout: option.timeout}, options: option}, nil
 }
 
 func newRequest(url string, option *Options) (*Request, error) {
@@ -61,7 +60,7 @@ func newRequest(url string, option *Options) (*Request, error) {
 }
 
 func newHttpRequest(option *Options) *Request {
-	return &Request{client: &http.Client{Timeout: time.Duration(option.timeout)*time.Second}, options: option}
+	return &Request{client: &http.Client{Timeout: option.timeout}, options: option}
 }
 
 func newHttpsRequest(option *Options) *Request {
@@ -70,7 +69,7 @@ func newHttpsRequest(option *Options) *Request {
 			InsecureSkipVerify: true,
 		},
 	}
-	return &Request{client: &http.Client{Transport: transport, Timeout: time.Duration(option.timeout)*time.Second}, options: option}
+	return &Request{client: &http.Client{Transport: transport, Timeout: option.timeout}, options: option}
 }
 
 func newHttpsRequestWithCerts(option *Options) (*Request, error) {
@@ -95,7 +94,7 @@ func newHttpsRequestWithCerts(option *Options) (*Request, error) {
 			InsecureSkipVerify: true,
 		},
 	}
-	return &Request{client: &http.Client{Transport: transport, Timeout: time.Duration(option.timeout)*time.Second}, options: option}, nil
+	return &Request{client: &http.Client{Transport: transport, Timeout: option.timeout}, options: option}, nil
 }
 
 func (g *Request) GetClient() *http.Client {

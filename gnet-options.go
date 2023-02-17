@@ -1,13 +1,14 @@
 package gnet
 
 import (
+	"time"
 	"io"
 	"os"
 )
 
 type Options struct {
-	method         string
-	timeout           int  // timeout in seconds to wait while connect/send/recv-ing
+	method   string
+	timeout  time.Duration // timeout to wait while connect/send/recv-ing
 	dontReadRespBody bool  // if it is true, it's your resposibility to get body from http.Response.Body
 	bodyLogger  io.Writer  // copy body to bodyLogger if not nil
 	multiBase  *BaseUrl
@@ -58,6 +59,12 @@ func M(method string) Option {
 }
 
 func WithTimeout(timeout int) Option {
+	return func(options *Options) {
+		options.timeout = time.Duration(timeout) * time.Second
+	}
+}
+
+func WithTimeoutDuration(timeout time.Duration) Option {
 	return func(options *Options) {
 		options.timeout = timeout
 	}
@@ -123,7 +130,7 @@ func getOptions(options ...Option) *Options {
 	}
 
 	if option.timeout <= 0 {
-			option.timeout = connect_timeout
+		option.timeout = time.Duration(connect_timeout) * time.Second
 	}
 
 	return &option
