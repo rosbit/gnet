@@ -2,8 +2,8 @@ package gnet
 
 import (
 	"net/http"
-	"io/ioutil"
 	"strings"
+	"os"
 	"fmt"
 	"crypto/tls"
 	"crypto/x509"
@@ -30,7 +30,7 @@ func NewHttpsRequestWithCerts(certPemFile, keyPemFile string, options ...Option)
 	if err != nil {
 		return nil, err
 	}
-	certBytes, err := ioutil.ReadFile(certPemFile)
+	certBytes, err := os.ReadFile(certPemFile)
 	if err != nil {
 		return nil, err
 	}

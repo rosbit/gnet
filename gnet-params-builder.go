@@ -1,7 +1,6 @@
 package gnet
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"fmt"
@@ -62,7 +61,7 @@ func buildHttpStringParams(params interface{}, bodyLogger io.Writer) (string, er
 		r = b.String()
 		return r, nil
 	case io.Reader:
-		p, err := ioutil.ReadAll(v)
+		p, err := io.ReadAll(v)
 		r = string(p)
 		return r, err
 	case []byte:
@@ -136,7 +135,7 @@ func buildJsonParams(params interface{}, bodyLogger io.Writer) (io.ReadSeeker, e
 		j = bb
 		return bytes.NewReader(bb), nil
 	case io.Reader:
-		p, err := ioutil.ReadAll(v)
+		p, err := io.ReadAll(v)
 		if err != nil {
 			return nil, err
 		}

@@ -5,7 +5,6 @@ package gnet
 import (
 	"net/http"
 	"strings"
-	"io/ioutil"
 	"time"
 	"fmt"
 	"os"
@@ -183,7 +182,7 @@ func (g *Request) run(url, method string, params io.Reader, header map[string]st
 	respBody, deferFunc := bodyLogger(resp.Body, g.options.bodyLogger)
 	defer deferFunc()
 
-	if body, err := ioutil.ReadAll(respBody); err != nil {
+	if body, err := io.ReadAll(respBody); err != nil {
 		return resp.StatusCode, nil, nil, err
 	} else {
 		return resp.StatusCode, body, resp, nil
