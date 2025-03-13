@@ -3,10 +3,13 @@ package gnet
 import (
 	"net/http"
 	"strings"
-	"os"
-	"fmt"
-	"crypto/tls"
-	"crypto/x509"
+)
+
+var (
+	getHttpClient = httpClientCreator()
+	getHttpsClient = httpsClientCreator()
+	getHttpsClientWithCertFiles = httpsClientWithCertFilesCreator()
+	getHttpsClientWithCertBlocks = httpsClientWithCertBlocksCreator()
 )
 
 type Request struct {
@@ -26,26 +29,11 @@ func NewHttpsRequest(options ...Option) *Request {
 
 func NewHttpsRequestWithCerts(certPemFile, keyPemFile string, options ...Option) (*Request, error) {
 	option := getOptions(options...)
-	cert, err := tls.LoadX509KeyPair(certPemFile, keyPemFile)
+	client, err := getHttpsClientWithCertFiles(certPemFile, keyPemFile, option.timeout)
 	if err != nil {
 		return nil, err
 	}
-	certBytes, err := os.ReadFile(certPemFile)
-	if err != nil {
-		return nil, err
-	}
-	clientCertPool := x509.NewCertPool()
-	if !clientCertPool.AppendCertsFromPEM(certBytes) {
-		return nil, fmt.Errorf("Failed to AppendCertsFromPEM")
-	}
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			RootCAs:            clientCertPool,
-			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-		},
-	}
-	return &Request{client: &http.Client{Transport: transport, Timeout: option.timeout}, options: option}, nil
+	return &Request{client: client, options: option}, nil
 }
 
 func newRequest(url string, option *Options) (*Request, error) {
@@ -60,41 +48,21 @@ func newRequest(url string, option *Options) (*Request, error) {
 }
 
 func newHttpRequest(option *Options) *Request {
-	return &Request{client: &http.Client{Timeout: option.timeout}, options: option}
+	client := getHttpClient(option.timeout)
+	return &Request{client: client, options: option}
 }
 
 func newHttpsRequest(option *Options) *Request {
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-	return &Request{client: &http.Client{Transport: transport, Timeout: option.timeout}, options: option}
+	client := getHttpsClient(option.timeout)
+	return &Request{client: client, options: option}
 }
 
 func newHttpsRequestWithCerts(option *Options) (*Request, error) {
-	cert, err := tls.X509KeyPair(option.certPEMBlock, option.keyPEMBlock)
+	client, err := getHttpsClientWithCertBlocks(option.caCert, option.certPEMBlock, option.keyPEMBlock, option.timeout)
 	if err != nil {
 		return nil, err
 	}
-	clientCertPool := x509.NewCertPool()
-	if len(option.caCert) > 0 {
-		if !clientCertPool.AppendCertsFromPEM(option.caCert) {
-			return nil, fmt.Errorf("Failed to AppendCertsFromPEM")
-		}
-	} else {
-		if !clientCertPool.AppendCertsFromPEM(option.certPEMBlock) {
-			return nil, fmt.Errorf("Failed to AppendCertsFromPEM")
-		}
-	}
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			RootCAs:            clientCertPool,
-			Certificates:       []tls.Certificate{cert},
-			InsecureSkipVerify: true,
-		},
-	}
-	return &Request{client: &http.Client{Transport: transport, Timeout: option.timeout}, options: option}, nil
+	return &Request{client: client, options: option}, nil
 }
 
 func (g *Request) GetClient() *http.Client {
