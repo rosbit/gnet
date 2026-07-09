@@ -168,6 +168,14 @@ func (g *Request) run(url, method string, params io.Reader, header map[string]st
 		req.SetBasicAuth(g.options.baUser, g.options.baPasswd)
 	}
 
+	if g.options.dontCheckRedirect {
+		g.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	} else {
+		g.client.CheckRedirect = nil
+	}
+
 	resp, err := g.client.Do(req)
 	if err != nil {
 		return http.StatusInternalServerError, nil, nil, err

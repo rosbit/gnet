@@ -103,3 +103,10 @@ func Test_httpBuildParmas(t *testing.T) {
 	}
 }
 
+func Test_dontRedirect(t *testing.T) {
+	print_result(Http("https://httpbin.org/absolute-redirect/2", DontCheckRedirect()))
+}
+
+func Test_redirect(t *testing.T) {
+	print_result(Http("https://httpbin.org/absolute-redirect/2"))
+}

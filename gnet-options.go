@@ -12,6 +12,7 @@ type Options struct {
 	dontReadRespBody bool  // if it is true, it's your resposibility to get body from http.Response.Body
 	bodyLogger  io.Writer  // copy body to bodyLogger if not nil
 	multiBase  *BaseUrl
+	dontCheckRedirect bool
 
 	params interface{}
 	headers map[string]string
@@ -85,6 +86,12 @@ func BodyLogger(writer io.Writer) Option {
 func MultiBase(multiBase *BaseUrl) Option {
 	return func(options *Options) {
 		options.multiBase = multiBase
+	}
+}
+
+func DontCheckRedirect() Option {
+	return func(options *Options) {
+		options.dontCheckRedirect = true
 	}
 }
 
